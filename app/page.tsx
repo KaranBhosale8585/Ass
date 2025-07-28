@@ -67,9 +67,13 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <p className="text-center text-red-600 font-medium mt-10">
-        Unauthorized access
-      </p>
+      <>
+        {" "}
+        <Header />
+        <p className="text-center text-red-600 font-medium mt-10">
+          Unauthorized access
+        </p>
+      </>
     );
   }
 

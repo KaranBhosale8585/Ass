@@ -15,14 +15,19 @@ export default function OtpLogin() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const router = useRouter();
 
   const sendOtp = async () => {
-    if (!email || !email.includes("@")) return setMsg("Enter a valid email.");
+    if (!email || !email.includes("@")) {
+      return setMsg({ text: "Enter a valid email address.", type: "error" });
+    }
     setLoading(true);
-    setMsg("");
+    setMsg(null);
     try {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
@@ -32,28 +37,36 @@ export default function OtpLogin() {
       const data = await res.json();
 
       if (res.status === 404 && !data.userExists) {
-        setMsg("No account found. Redirecting to signup...");
+        setMsg({
+          text: "No account found. Redirecting to signup...",
+          type: "error",
+        });
         setTimeout(() => router.replace("/signup"), 2000);
         return;
       }
 
       if (res.ok) {
-        setMsg("OTP sent to your email.");
+        setMsg({ text: "OTP has been sent to your email.", type: "success" });
         setStep("otp");
       } else {
-        setMsg(data.error || "Failed to send OTP.");
+        setMsg({ text: data.error || "Failed to send OTP.", type: "error" });
       }
     } catch {
-      setMsg("Something went wrong.");
+      setMsg({
+        text: "Something went wrong. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const verifyOtp = async () => {
-    if (!otp || otp.length < 4) return setMsg("Enter a valid OTP.");
+    if (!otp || otp.length < 4) {
+      return setMsg({ text: "Enter a valid OTP.", type: "error" });
+    }
     setLoading(true);
-    setMsg("");
+    setMsg(null);
     try {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
@@ -65,10 +78,16 @@ export default function OtpLogin() {
       if (res.ok) {
         router.replace("/");
       } else {
-        setMsg(data.error || "OTP verification failed.");
+        setMsg({
+          text: data.error || "OTP verification failed.",
+          type: "error",
+        });
       }
     } catch {
-      setMsg("Something went wrong.");
+      setMsg({
+        text: "Something went wrong. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -110,9 +129,10 @@ export default function OtpLogin() {
             <p className="mb-2 text-sm text-gray-600">
               OTP sent to <strong>{maskEmail(email)}</strong>
             </p>
+
             <label className="block text-sm font-medium mb-1">OTP</label>
             <input
-              type="text"
+              type="number"
               placeholder="Enter OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
@@ -150,8 +170,12 @@ export default function OtpLogin() {
         )}
 
         {msg && (
-          <p className="mt-4 text-center text-sm text-red-600 whitespace-pre-wrap">
-            {msg}
+          <p
+            className={`mt-4 text-center text-sm whitespace-pre-wrap ${
+              msg.type === "error" ? "text-red-600" : "text-green-600"
+            }`}
+          >
+            {msg.text}
           </p>
         )}
 

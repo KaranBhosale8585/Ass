@@ -5,17 +5,17 @@ import { otpStore } from "@/lib/otpStore";
 import { sendOtpMail } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  const { name, email } = await req.json();
 
   try {
     await connectDB();
 
     const existingUser = await User.findOne({ email });
 
-    if (!existingUser) {
+    if (existingUser) {
       return NextResponse.json(
-        { error: "User not found. Please signup.", userExists: false },
-        { status: 404 }
+        { error: "Account already exists. Please login.", userExists: true },
+        { status: 409 }
       );
     }
 
@@ -29,19 +29,16 @@ export async function POST(req: NextRequest) {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await sendOtpMail(email, existingUser.name, otp);
+    await sendOtpMail(email, name, otp);
 
-    otpStore.set(email, {
-      otp,
-      expires: Date.now() + 5 * 60 * 1000,
-    });
+    otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 });
 
     return NextResponse.json({
       message: "OTP sent to your email.",
-      userExists: true,
+      userExists: false,
     });
   } catch (error) {
-    console.error("OTP Send Error:", error);
-    return NextResponse.json({ error: "Failed to send OTP." }, { status: 500 });
+    console.error("Signup Error:", error);
+    return NextResponse.json({ error: "Signup failed." }, { status: 500 });
   }
 }

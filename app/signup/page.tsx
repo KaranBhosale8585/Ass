@@ -19,15 +19,16 @@ export default function Signup() {
     }
 
     setLoading(true);
+    setMsg("");
     try {
-      const res = await fetch("/api/auth/send-otp", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       const data = await res.json();
-      setMsg(data.message || data.error);
+      setMsg(data.message || data.error || "Unexpected response.");
 
       if (res.ok) {
         if (data.userExists) {
@@ -38,7 +39,7 @@ export default function Signup() {
         }
       }
     } catch (error) {
-      setMsg("Something went wrong!");
+      setMsg("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -46,11 +47,12 @@ export default function Signup() {
 
   const verifyOtp = async () => {
     if (!otp || otp.length < 4) {
-      setMsg("Enter a valid OTP.");
+      setMsg("Please enter a valid 4-digit OTP.");
       return;
     }
 
     setLoading(true);
+    setMsg("");
     try {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
@@ -59,13 +61,13 @@ export default function Signup() {
       });
 
       const data = await res.json();
-      setMsg(data.message || data.error);
+      setMsg(data.message || data.error || "Unexpected response.");
 
       if (res.ok) {
         router.replace("/");
       }
     } catch (error) {
-      setMsg("Something went wrong!");
+      setMsg("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -78,7 +80,7 @@ export default function Signup() {
         <p className="text-sm text-gray-500 text-center mb-6">
           {step === "form"
             ? "Sign up with your email."
-            : `OTP sent to ${form.email}`}
+            : `OTP has been sent to ${form.email}`}
         </p>
 
         {/* Name Input */}
@@ -91,7 +93,7 @@ export default function Signup() {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="pl-10 pr-3 py-2 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-black"
-            disabled={step === "otp"} // disable after sending OTP
+            disabled={step === "otp"}
           />
         </div>
 
@@ -105,7 +107,7 @@ export default function Signup() {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="pl-10 pr-3 py-2 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-black"
-            disabled={step === "otp"} // disable after sending OTP
+            disabled={step === "otp"}
           />
         </div>
 
@@ -116,13 +118,13 @@ export default function Signup() {
             <input
               type="text"
               placeholder="Enter OTP"
+              maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="w-full border rounded-md px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-black"
               disabled={loading}
             />
 
-            {/* Resend OTP button */}
             <button
               onClick={sendOtp}
               className="text-sm text-blue-600 hover:underline mb-4"
@@ -133,7 +135,7 @@ export default function Signup() {
           </>
         )}
 
-        {/* Button */}
+        {/* Submit Button */}
         <button
           onClick={step === "form" ? sendOtp : verifyOtp}
           className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-900 transition disabled:opacity-50"
@@ -153,7 +155,8 @@ export default function Signup() {
           <p
             className={`mt-4 text-center text-sm ${
               msg.toLowerCase().includes("error") ||
-              msg.toLowerCase().includes("fail")
+              msg.toLowerCase().includes("fail") ||
+              msg.toLowerCase().includes("wrong")
                 ? "text-red-600"
                 : "text-green-600"
             }`}
@@ -162,7 +165,7 @@ export default function Signup() {
           </p>
         )}
 
-        {/* Already have account */}
+        {/* Redirect to Login */}
         <p className="text-sm text-center mt-6 text-gray-500">
           Already have an account?{" "}
           <a href="/login" className="text-black underline hover:text-gray-900">
