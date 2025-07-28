@@ -9,8 +9,6 @@ export async function POST(req: NextRequest) {
   const { email, otp, name } = await req.json();
   const record = otpStore.get(email);
 
-  console.log(record);
-
   if (!record) {
     return NextResponse.json(
       { error: "No OTP found for this email." },
