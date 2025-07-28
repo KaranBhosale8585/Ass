@@ -6,8 +6,10 @@ import { generateToken } from "@/utils/auth";
 import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
-  const { email, otp } = await req.json();
+  const { email, otp, name } = await req.json();
   const record = otpStore.get(email);
+
+  console.log(record);
 
   if (!record) {
     return NextResponse.json(
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // If user doesn't exist, create one
     if (!user) {
-      user = await User.create({ name: "New User", email });
+      user = await User.create({ name, email });
     }
 
     otpStore.delete(email); // Clean up used OTP
