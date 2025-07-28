@@ -4,6 +4,7 @@ import { Note } from "@/models/note";
 import { getCurrentUser } from "@/utils/getCurrentUser";
 
 export async function DELETE(req: Request) {
+  
   try {
     await connectDB();
     const user = await getCurrentUser();

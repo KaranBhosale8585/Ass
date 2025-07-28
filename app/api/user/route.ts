@@ -1,4 +1,3 @@
-// /app/api/user/route.ts
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/utils/getCurrentUser";
 import { Note } from "@/models/note";

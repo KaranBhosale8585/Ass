@@ -10,11 +10,20 @@ export async function POST(req: Request) {
     if (!user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { title } = await req.json();
-    if (!title)
-      return NextResponse.json({ error: "Title required" }, { status: 400 });
+    const { title, description } = await req.json();
 
-    const newNote = await Note.create({ title, userId: user._id });
+    if (!title || !description)
+      return NextResponse.json(
+        { error: "Title and description required" },
+        { status: 400 }
+      );
+
+    const newNote = await Note.create({
+      title,
+      description,
+      userId: user._id,
+    });
+
     return NextResponse.json(newNote, { status: 201 });
   } catch (error) {
     console.error("Error creating note:", error);
