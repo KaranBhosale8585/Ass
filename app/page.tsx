@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/user")
@@ -77,7 +77,7 @@ export default function Dashboard() {
     <>
       <Header />
       <main className="min-h-screen bg-white px-4 py-10 text-black">
-        <div className="max-w-3xl mx-auto space-y-10">
+        <div className="max-w-5xl mx-auto space-y-10">
           {/* User Card */}
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
             <h2 className="text-2xl font-bold">Welcome, {user.name} 👋</h2>
@@ -100,64 +100,47 @@ export default function Dashboard() {
             {notes.length === 0 ? (
               <p className="text-sm text-gray-500">No notes yet.</p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {notes.map((note) => {
-                  const isExpanded = expandedNoteId === note._id;
-
-                  return (
-                    <motion.div
-                      key={note._id}
-                      onClick={() =>
-                        setExpandedNoteId((prev) =>
-                          prev === note._id ? null : note._id
-                        )
-                      }
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-gray-100 rounded-xl p-4 flex flex-col justify-between shadow border cursor-pointer hover:bg-gray-200 transition"
-                    >
-                      <div className="flex-1">
-                        <h4 className="text-md font-semibold">{note.title}</h4>
-                        <AnimatePresence initial={false}>
-                          {isExpanded && (
-                            <motion.p
-                              key="desc"
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="text-sm text-gray-700 mt-2 whitespace-pre-line overflow-hidden"
-                            >
-                              {note.description}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <p className="text-xs text-gray-500">
-                          {new Date(note.createdAt).toLocaleString()}
-                        </p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNote(note._id);
-                          }}
-                        >
-                          <Trash2 className="w-5 h-5 text-red-500 hover:text-red-700" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {notes.map((note) => (
+                  <motion.div
+                    key={note._id}
+                    onClick={() => setSelectedNote(note)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-gray-100 rounded-xl p-4 flex flex-col justify-between shadow border cursor-pointer hover:bg-gray-200 transition overflow-hidden max-h-52"
+                  >
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className="text-md font-semibold truncate">
+                        {note.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-2 line-clamp-3 overflow-hidden">
+                        {note.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-4">
+                      <p className="text-xs text-gray-500 truncate">
+                        {new Date(note.createdAt).toLocaleString()}
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNote(note._id);
+                        }}
+                      >
+                        <Trash2 className="w-5 h-5 text-red-500 hover:text-red-700" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* Modal for Creating Note */}
+      {/* Create Note Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
@@ -200,6 +183,42 @@ export default function Dashboard() {
               >
                 Create Note
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Description Popup Modal */}
+      <AnimatePresence>
+        {selectedNote && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedNote(null)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-xl relative"
+            >
+              <button
+                onClick={() => setSelectedNote(null)}
+                className="absolute top-3 right-3 text-gray-500 hover:text-black"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h3 className="text-xl font-bold">{selectedNote.title}</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-line">
+                {selectedNote.description}
+              </p>
+              <p className="text-xs text-gray-500">
+                Created At: {new Date(selectedNote.createdAt).toLocaleString()}
+              </p>
             </motion.div>
           </motion.div>
         )}
