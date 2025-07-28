@@ -89,10 +89,10 @@ export default function Dashboard() {
           </div>
 
           {/* Create Note Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-center sm:justify-end">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-900 transition font-medium"
+              className="w-full h-14 sm:w-auto py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-900 transition font-medium"
             >
               + Create Note
             </button>
