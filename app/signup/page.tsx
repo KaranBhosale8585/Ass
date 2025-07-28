@@ -74,7 +74,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-black px-4">
+    <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-white text-black">
       <div className="w-full max-w-sm bg-white border border-gray-300 rounded-xl shadow p-6">
         <h2 className="text-2xl font-bold text-center mb-1">Create Account</h2>
         <p className="text-sm text-gray-500 text-center mb-6">
@@ -172,6 +172,15 @@ export default function Signup() {
             Sign in
           </a>
         </p>
+      </div>{" "}
+      
+      {/* Image Section (Only visible on desktop) */}
+      <div className="hidden md:block md:w-1/2 h-full">
+        <img
+          src="/Illustration.png"
+          alt="Sign In Illustration"
+          className="w-full h-[100vh] object-cover rounded-l-lg"
+        />
       </div>
     </div>
   );
