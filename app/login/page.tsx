@@ -1,148 +1,165 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
-import Header from "@/components/Header";
-import { Mail, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Mail } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function Login() {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({ email: false, password: false });
+// Helper to mask email
+const maskEmail = (email: string) => {
+  const [user, domain] = email.split("@");
+  const maskedUser = user.length > 1 ? user[0] + "***" : "*";
+  return `${maskedUser}@${domain}`;
+};
+
+export default function OtpLogin() {
+  const [step, setStep] = useState<"email" | "otp">("email");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newErrors = {
-      email: !form.email.trim(),
-      password: !form.password.trim(),
-    };
-    setErrors(newErrors);
-
-    if (newErrors.email || newErrors.password) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
+  const sendOtp = async () => {
+    if (!email || !email.includes("@"))
+      return toast.error("Enter a valid email.");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-        cache: "no-store",
+        body: JSON.stringify({ email }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || data.error || "Login failed.");
+      if (res.ok) {
+        toast.success(data.message || "OTP sent to your email");
+        setStep("otp");
       } else {
-        toast.success("Login successful!");
-        setForm({ email: "", password: "" });
-
-        setTimeout(() => {
-          router.replace("/");
-        }, 1000);
+        toast.error(data.error || "Failed to send OTP");
       }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error("Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otp || otp.length < 4) return toast.error("Enter a valid OTP.");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Login successful!");
+        router.replace("/");
+      } else {
+        toast.error(data.error || "OTP verification failed.");
+      }
+    } catch (error) {
+      toast.error("Something went wrong!");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen flex items-center justify-center bg-white text-black px-4">
-        <div className="w-full max-w-md border border-gray-200 rounded-xl shadow-sm p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 text-black px-4">
+      <div className="w-full max-w-sm bg-white border border-gray-200 rounded-xl shadow p-6">
+        <h2 className="text-2xl font-bold text-center mb-1">Sign In</h2>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          Login to access your account.
+        </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div>
-              <label
-                className="block text-sm font-medium mt-4 mb-1"
-                htmlFor="email"
-              >
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={form.email}
-                  onChange={(e) => {
-                    setForm({ ...form, email: e.target.value });
-                    setErrors({ ...errors, email: false });
-                  }}
-                  className={`w-full pl-10 pr-3 py-2 border ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  } rounded-md focus:outline-none focus:border-black`}
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-red-600 mt-1">Email is required.</p>
-              )}
+        {/* Email Field - Always Visible */}
+        <label className="block text-sm mb-1 font-medium" htmlFor="email">
+          Email
+        </label>
+        <div className="relative mb-4">
+          <Mail className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
+          <input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 pr-3 py-2 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading || step === "otp"} // disable if OTP is being entered
+          />
+        </div>
+
+        {/* Send OTP Button - Only show if step is email */}
+        {step === "email" && (
+          <button
+            onClick={sendOtp}
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50 mb-4"
+            disabled={loading}
+          >
+            {loading ? "Sending OTP..." : "Send OTP"}
+          </button>
+        )}
+
+        {/* OTP Section - Shown after email is submitted */}
+        {step === "otp" && (
+          <>
+            <div className="mb-3 text-sm text-green-600">
+              OTP sent to <strong>{maskEmail(email)}</strong>
             </div>
 
-            {/* Password Field */}
-            <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="password"
+            <label className="block text-sm mb-1 font-medium" htmlFor="otp">
+              OTP
+            </label>
+            <input
+              id="otp"
+              type="text"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loading}
+            />
+
+            <div className="flex justify-between items-center text-sm mb-4">
+              <button
+                onClick={sendOtp}
+                className="text-blue-600 hover:underline"
+                type="button"
+                disabled={loading}
               >
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
+                Resend OTP
+              </button>
+              <label className="flex items-center gap-2 text-gray-700">
                 <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={form.password}
-                  onChange={(e) => {
-                    setForm({ ...form, password: e.target.value });
-                    setErrors({ ...errors, password: false });
-                  }}
-                  className={`w-full pl-10 pr-3 py-2 border ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  } rounded-md focus:outline-none focus:border-black`}
+                  type="checkbox"
+                  checked={keepLoggedIn}
+                  onChange={() => setKeepLoggedIn(!keepLoggedIn)}
+                  className="h-4 w-4"
                 />
-              </div>
-              {errors.password && (
-                <p className="text-xs text-red-600 mt-1">
-                  Password is required.
-                </p>
-              )}
+                Keep me logged in
+              </label>
             </div>
 
             <button
-              type="submit"
-              className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-900 transition disabled:opacity-50"
+              onClick={verifyOtp}
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Verifying..." : "Sign in"}
             </button>
-          </form>
+          </>
+        )}
 
-          <div className="text-sm text-center mt-6 text-gray-700">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="underline hover:text-black transition"
-            >
-              Register
-            </Link>
-          </div>
-        </div>
+        <p className="text-sm text-center mt-4 text-gray-500">
+          Don’t have an account?{" "}
+          <a href="/signup" className="text-blue-600 hover:underline">
+            Create one
+          </a>
+        </p>
       </div>
-    </>
+    </div>
   );
 }

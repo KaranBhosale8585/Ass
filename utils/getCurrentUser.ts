@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { verifyToken } from "@/utils/auth";
 import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models/user";
+import  User  from "@/models/user";
 
 export async function getCurrentUser() {
   const cookieStore = await cookies();
